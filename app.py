@@ -214,25 +214,37 @@ def inject_css():
 # SIDEBAR
 # ════════════════════════════════════════════════════════════
 
-def _load_secret_keys() -> list:
-    """Carrega chaves do st.secrets (Streamlit Cloud) ou variáveis de ambiente."""
-    keys = []
+@st.cache_resource
+def get_key_manager() -> GeminiKeyManager:
+    """Singleton compartilhado entre todas as sessões."""
+    secret_keys = []
     try:
         for k in ["GEMINI_API_KEY", "GEMINI_API_KEY_2", "GEMINI_API_KEY_3"]:
             v = st.secrets.get(k)
             if v:
-                keys.append(v)
+                secret_keys.append(v)
     except Exception:
         pass
-    return keys
+    return GeminiKeyManager(env_keys=secret_keys)
+
+
+def _check_admin_credentials(username: str, password: str) -> bool:
+    try:
+        ok_user = st.secrets.get("ADMIN_USERNAME", "admin")
+        ok_pass = st.secrets.get("ADMIN_PASSWORD", "fibra2024")
+    except Exception:
+        ok_user, ok_pass = "admin", "fibra2024"
+    return username == ok_user and password == ok_pass
 
 
 def render_sidebar() -> GeminiKeyManager:
-    secret_keys = _load_secret_keys()
-    km = GeminiKeyManager(env_keys=secret_keys)
-    managed_externally = len(secret_keys) > 0
+    km = get_key_manager()
+
+    if "admin_logged_in" not in st.session_state:
+        st.session_state.admin_logged_in = False
 
     with st.sidebar:
+        # ── Logo ──────────────────────────────────────────
         st.html("""
         <div style="padding:.5rem 0 1.5rem;text-align:center;">
             <div style="font-size:2.8rem;margin-bottom:.4rem;">🏢</div>
@@ -246,112 +258,128 @@ def render_sidebar() -> GeminiKeyManager:
         </div>
         """)
 
-        if managed_externally:
-            # Chave configurada via secrets — mostra só status limpo, sem expor detalhes
-            total  = len(km.data["keys"])
-            active = km.get_active_key()
-            entry  = km._current_entry()
-            remaining = (DAILY_LIMIT - entry.get("requests_today", 0)) if entry else 0
-            used      = entry.get("requests_today", 0) if entry else 0
-            status_color = "#22c55e" if active else "#ef4444"
-            status_text  = "Sistema pronto" if active else "Limite atingido hoje"
-            st.html(f"""
-            <div style="background:rgba(255,255,255,.06);border-radius:12px;
-                        padding:1rem 1.2rem;margin-bottom:.5rem;">
-                <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem;">
-                    <div style="width:10px;height:10px;border-radius:50%;
-                                background:{status_color};flex-shrink:0;"></div>
-                    <span style="color:#e6f1ff;font-size:.9rem;font-weight:700;">
-                        {status_text}
-                    </span>
-                </div>
-                <div style="font-size:.78rem;color:#8892b0;line-height:1.8;">
-                    🤖 Google Gemini AI<br>
-                    📊 {used:,} / {DAILY_LIMIT:,} usos hoje<br>
-                    ✅ {remaining:,} restantes
-                </div>
+        # ── Status visível para todos ──────────────────────
+        entry     = km._current_entry()
+        active    = km.get_active_key()
+        used      = entry.get("requests_today", 0) if entry else 0
+        remaining = (DAILY_LIMIT - used) if entry else 0
+        dot_color = "#22c55e" if active else "#ef4444"
+        status    = "Sistema pronto" if active else "Limite atingido hoje"
+
+        st.html(f"""
+        <div style="background:rgba(255,255,255,.06);border-radius:12px;
+                    padding:.9rem 1.1rem;margin-bottom:.5rem;">
+            <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;">
+                <div style="width:9px;height:9px;border-radius:50%;
+                            background:{dot_color};flex-shrink:0;"></div>
+                <span style="color:#e6f1ff;font-size:.88rem;font-weight:700;">{status}</span>
+            </div>
+            <div style="font-size:.76rem;color:#8892b0;line-height:1.9;">
+                🤖 Google Gemini AI<br>
+                📊 {used:,} / {DAILY_LIMIT:,} usos hoje<br>
+                ✅ {remaining:,} restantes
+            </div>
+        </div>
+        """)
+        if km.has_keys():
+            st.progress(min(used / DAILY_LIMIT, 1.0))
+
+        # ── Aviso se sem chaves ────────────────────────────
+        if not km.has_keys() and not st.session_state.admin_logged_in:
+            st.html("""
+            <div style="margin:.8rem 0;padding:.8rem 1rem;
+                        background:rgba(255,193,7,.12);border:1px solid rgba(255,193,7,.4);
+                        border-radius:10px;">
+                <p style="color:#ffc107;font-size:.82rem;margin:0;font-weight:600;">
+                    ⚠️ Nenhuma chave configurada.<br>Faça login como admin.
+                </p>
             </div>
             """)
-            if remaining > 0:
-                st.progress(used / DAILY_LIMIT)
+
+        # ── Botão Admin (discreto, no rodapé da sidebar) ───
+        st.divider()
+
+        if not st.session_state.admin_logged_in:
+            with st.expander("⚙️ Admin", expanded=False):
+                st.html("""
+                <p style="font-size:.8rem;color:#8892b0;margin-bottom:.5rem;">
+                    Área restrita — acesso autorizado apenas.
+                </p>
+                """)
+                u = st.text_input("Usuário", key="admin_user", placeholder="usuário")
+                p = st.text_input("Senha", key="admin_pass", type="password", placeholder="••••••")
+                if st.button("Entrar", use_container_width=True, type="primary", key="btn_login"):
+                    if _check_admin_credentials(u, p):
+                        st.session_state.admin_logged_in = True
+                        st.rerun()
+                    else:
+                        st.error("Usuário ou senha incorretos.")
         else:
-            # Modo local — exibe gerenciamento de chaves completo
-            st.markdown("### 🔑 Chaves Gemini")
+            # ── Painel Admin ───────────────────────────────
             st.html("""
-            <p style="font-size:.82rem;color:#8892b0;line-height:1.55;margin-bottom:.75rem;">
-                Gemini AI é <b style="color:#4ca3ff;">gratuito</b> —
-                1.500 requisições/dia por conta.<br>
+            <p style="font-size:.9rem;font-weight:700;color:#4ca3ff;margin:.2rem 0 .8rem;">
+                ⚙️ Painel Admin
+            </p>
+            """)
+
+            # Lista de chaves com botão remover
+            if km.data["keys"]:
+                current_idx = km.data.get("current_index", 0)
+                for i, entry_k in enumerate(km.data["keys"]):
+                    rem  = DAILY_LIMIT - entry_k.get("requests_today", 0)
+                    used_k = entry_k.get("requests_today", 0)
+                    dot  = "🟢" if (i == current_idx and rem > STOP_AT_REMAINING) else ("🔴" if rem <= STOP_AT_REMAINING else "⚪")
+                    col_a, col_b = st.columns([4, 1])
+                    with col_a:
+                        st.html(f"""
+                        <p style="font-size:.8rem;margin:.3rem 0 0;color:#ccd6f6;font-weight:600;">
+                            {dot} Conta {i+1}
+                            <code style="font-size:.7rem;background:rgba(255,255,255,.1);
+                                         padding:1px 5px;border-radius:4px;color:#a8d8ff;">
+                                ...{entry_k['key'][-8:]}
+                            </code>
+                        </p>
+                        <p style="font-size:.72rem;color:#8892b0;margin:.1rem 0 .4rem;">
+                            {used_k:,}/{DAILY_LIMIT:,} · {rem:,} restantes
+                        </p>
+                        """)
+                    with col_b:
+                        if st.button("🗑️", key=f"del_{i}", help="Remover"):
+                            km.remove_key(i)
+                            st.rerun()
+            else:
+                st.info("Nenhuma chave cadastrada.")
+
+            # Adicionar nova chave
+            st.html("""
+            <p style="font-size:.83rem;font-weight:700;color:#e6f1ff;
+                      margin:.8rem 0 .3rem;">➕ Adicionar chave</p>
+            <p style="font-size:.75rem;color:#8892b0;margin:0 0 .4rem;">
                 <a href="https://aistudio.google.com/app/apikey" target="_blank"
                    style="color:#4ca3ff;text-decoration:none;">
                     Obter chave gratuita ↗
                 </a>
             </p>
             """)
-            if km.data["keys"]:
-                current_idx = km.data.get("current_index", 0)
-                for i, entry in enumerate(km.data["keys"]):
-                    remaining = DAILY_LIMIT - entry.get("requests_today", 0)
-                    used      = entry.get("requests_today", 0)
-                    is_active = (i == current_idx)
-                    is_low    = remaining <= STOP_AT_REMAINING
-                    dot = "🔴" if is_low else ("🟢" if is_active else "⚪")
-                    tag = " — <span style='color:#64b5f6;font-size:.72rem;'>ativa</span>" if is_active else ""
-                    col_info, col_del = st.columns([4, 1])
-                    with col_info:
-                        st.html(f"""
-                        <p style="font-size:.83rem;margin:.5rem 0 .1rem;font-weight:600;color:#ccd6f6;">
-                            {dot} Conta {i+1}
-                            <code style="font-size:.72rem;background:rgba(255,255,255,.12);
-                                         padding:1px 6px;border-radius:4px;color:#a8d8ff;">
-                                ...{entry['key'][-8:]}
-                            </code>{tag}
-                        </p>
-                        """)
-                        st.progress(used / DAILY_LIMIT,
-                                    text=f"{used:,}/{DAILY_LIMIT:,} · **{remaining:,} restantes**")
-                    with col_del:
-                        st.markdown("<div style='margin-top:0.6rem'></div>", unsafe_allow_html=True)
-                        if st.button("🗑️", key=f"del_{i}", help=f"Remover conta {i+1}"):
-                            km.data["keys"].pop(i)
-                            if km.data["current_index"] >= len(km.data["keys"]):
-                                km.data["current_index"] = 0
-                            km._save()
-                            st.rerun()
-            else:
-                st.warning("Nenhuma conta configurada.")
-
-            st.divider()
-            st.html("""
-            <p style="font-size:.88rem;font-weight:700;color:#e6f1ff;margin-bottom:.4rem;">
-                ➕ Adicionar conta
-            </p>
-            """)
-            new_key = st.text_input(
-                "Chave", type="password",
-                placeholder="AIzaSy...", label_visibility="collapsed",
-            )
-            if st.button("Adicionar Conta", use_container_width=True, type="primary"):
+            new_key = st.text_input("Nova chave", type="password",
+                                    placeholder="AIzaSy...", label_visibility="collapsed",
+                                    key="new_key_input")
+            if st.button("Adicionar", use_container_width=True, type="primary", key="btn_add_key"):
                 if new_key.strip():
-                    added = km.add_key(new_key.strip())
-                    if added:
-                        st.success(f"✅ Conta ...{new_key.strip()[-8:]} adicionada!")
+                    if km.add_key(new_key.strip()):
+                        st.success(f"✅ Chave ...{new_key.strip()[-8:]} adicionada!")
                         st.rerun()
                     else:
                         st.info("Chave já cadastrada.")
                 else:
                     st.error("Cole uma chave válida.")
 
+            st.divider()
+            if st.button("🚪 Sair do admin", use_container_width=True, key="btn_logout"):
+                st.session_state.admin_logged_in = False
+                st.rerun()
+
         if not km.has_keys():
-            st.html("""
-            <div style="margin-top:1rem;padding:.9rem 1rem;
-                        background:rgba(255,193,7,.12);
-                        border:1px solid rgba(255,193,7,.4);
-                        border-radius:10px;">
-                <p style="color:#ffc107;font-size:.84rem;margin:0;font-weight:600;">
-                    ⚠️ Sistema não configurado.
-                </p>
-            </div>
-            """)
             st.stop()
 
     return km
