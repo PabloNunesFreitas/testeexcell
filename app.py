@@ -118,6 +118,14 @@ def inject_css():
     [data-testid="stSidebar"] [data-testid="stExpander"] span {
         color: #8892b0 !important;
     }
+    [data-testid="stSidebar"] [data-testid="stExpander"] .stTextInput input {
+        background: rgba(10,25,47,.85) !important;
+        color: #e6f1ff !important;
+        border: 1px solid rgba(100,163,255,.4) !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stExpander"] .stTextInput input::placeholder {
+        color: #4a6080 !important;
+    }
 
     /* ABAS */
     .stTabs [data-testid="stTab"] {
