@@ -241,7 +241,16 @@ def render_sidebar() -> GeminiKeyManager:
         </p>
         """)
 
-        km = GeminiKeyManager()
+        # Carrega chaves do st.secrets (Streamlit Cloud) se disponíveis
+        secret_keys = []
+        try:
+            for k in ["GEMINI_API_KEY", "GEMINI_API_KEY_2", "GEMINI_API_KEY_3"]:
+                v = st.secrets.get(k)
+                if v:
+                    secret_keys.append(v)
+        except Exception:
+            pass
+        km = GeminiKeyManager(env_keys=secret_keys)
 
         if km.data["keys"]:
             current_idx = km.data.get("current_index", 0)

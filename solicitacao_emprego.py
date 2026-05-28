@@ -65,9 +65,16 @@ KEYS_FILE = Path(__file__).parent / "gemini_keys.json"
 class GeminiKeyManager:
     """Gerencia múltiplas chaves Gemini com controle de cota diária."""
 
-    def __init__(self):
+    def __init__(self, env_keys: list = None):
         self.data = self._load()
         self._reset_if_new_day()
+        # Auto-carrega chaves de variáveis de ambiente
+        for key in (env_keys or []):
+            if key:
+                self.add_key(key)
+        env_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        if env_key:
+            self.add_key(env_key)
 
     def _load(self) -> dict:
         if KEYS_FILE.exists():

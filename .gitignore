@@ -1,5 +1,6 @@
 # Chaves de API — NUNCA commitar
 gemini_keys.json
+.streamlit/secrets.toml
 
 # Python
 __pycache__/
