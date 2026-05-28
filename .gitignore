@@ -1,0 +1,18 @@
+# Chaves de API — NUNCA commitar
+gemini_keys.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.env
+.venv
+
+# Arquivos gerados
+SOLICITACAO_*.xlsx
+*_relatorio.txt
+
+# OS
+.DS_Store
+Thumbs.db
