@@ -118,6 +118,15 @@ class GeminiKeyManager:
     def has_keys(self) -> bool:
         return len(self.data["keys"]) > 0
 
+    def remove_key(self, index: int) -> bool:
+        if 0 <= index < len(self.data["keys"]):
+            self.data["keys"].pop(index)
+            if self.data["current_index"] >= len(self.data["keys"]):
+                self.data["current_index"] = 0
+            self._save()
+            return True
+        return False
+
     def _current_entry(self) -> Optional[dict]:
         idx = self.data.get("current_index", 0)
         if 0 <= idx < len(self.data["keys"]):
