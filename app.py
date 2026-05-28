@@ -97,6 +97,28 @@ def inject_css():
         background: rgba(255,255,255,.1) !important; border-radius: 99px !important;
     }
 
+    /* EXPANDER ADMIN — tema escuro dentro da sidebar */
+    [data-testid="stSidebar"] [data-testid="stExpander"] {
+        background: rgba(255,255,255,.04) !important;
+        border: 1px solid rgba(100,163,255,.2) !important;
+        box-shadow: none !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stExpander"] summary {
+        background: rgba(255,255,255,.07) !important;
+        border-bottom: 1px solid rgba(100,163,255,.15) !important;
+        color: #e6f1ff !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stExpander"] summary:hover {
+        background: rgba(255,255,255,.11) !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stExpander"] label {
+        color: #ccd6f6 !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stExpander"] p,
+    [data-testid="stSidebar"] [data-testid="stExpander"] span {
+        color: #8892b0 !important;
+    }
+
     /* ABAS */
     .stTabs [data-testid="stTab"] {
         font-size: .98rem !important; font-weight: 500 !important;
@@ -758,7 +780,6 @@ def main():
                     process_documents(uploaded, km)
                 if st.session_state.get("results"):
                     st.success("✅ Pronto! Clique na aba **📊 Resultado** para baixar o Excel.")
-                    st.balloons()
 
     with tab_result:
         render_result_tab()
