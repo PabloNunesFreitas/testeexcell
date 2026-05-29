@@ -391,11 +391,11 @@ FIELD_PRIORITY = {
     "telefone":                ["curriculo"],
     "funcao":                  ["curriculo"],
     "escolaridade":            ["historico_escolar", "certificado_conclusao", "curriculo"],
-    "empresa_anterior":        ["carteira_trabalho_digital", "curriculo"],
-    "cargo_anterior":          ["carteira_trabalho_digital", "curriculo"],
-    "data_admissao_anterior":  ["carteira_trabalho_digital", "curriculo"],
-    "data_demissao_anterior":  ["carteira_trabalho_digital", "curriculo"],
-    "motivo_saida":            ["carteira_trabalho_digital", "curriculo"],
+    "empresa_anterior":        ["carteira_trabalho_digital", "carteira_trabalho", "curriculo"],
+    "cargo_anterior":          ["carteira_trabalho_digital", "carteira_trabalho", "curriculo"],
+    "data_admissao_anterior":  ["carteira_trabalho_digital", "carteira_trabalho", "curriculo"],
+    "data_demissao_anterior":  ["carteira_trabalho_digital", "carteira_trabalho", "curriculo"],
+    "motivo_saida":            ["carteira_trabalho_digital", "carteira_trabalho", "curriculo"],
     "endereco_empresa":        ["curriculo"],
     "estado_civil":            ["carteira_trabalho"],
     "nacionalidade":           ["carteira_trabalho", "rg_frente"],
@@ -705,17 +705,22 @@ def merge_extracted_data(all_extractions: dict) -> dict:
         ["tempo_experiencia", "endereco_empresa", "email"]
     )
 
+    _invalid = {None, "", "null", "none", "n/a", "não informado", "nao informado", "-", "--"}
+
+    def _valid(v):
+        return v is not None and str(v).strip().lower() not in _invalid
+
     for field in all_fields:
         priority_docs = FIELD_PRIORITY.get(field, list(DOCUMENT_TYPES))
         for doc_type in priority_docs:
             if doc_type not in all_extractions:
                 continue
             extraction = all_extractions[doc_type]
-            if field in extraction and extraction[field]:
+            if field in extraction and _valid(extraction[field]):
                 merged[field] = extraction[field]
                 break
             for alias, canonical in aliases.items():
-                if canonical == field and alias in extraction and extraction[alias]:
+                if canonical == field and alias in extraction and _valid(extraction[alias]):
                     merged[field] = extraction[alias]
                     break
             if field in merged:
@@ -764,9 +769,11 @@ def fill_excel(template_path: str, output_path: str, data: dict) -> list:
     wb = openpyxl.load_workbook(output_path)
     ws = wb.active
 
+    _skip = {None, "", "null", "none", "n/a", "não informado", "nao informado", "-", "--"}
+
     for field, (cell_coord, fmt_func) in CELL_MAP.items():
         value = data.get(field)
-        if not value:
+        if value is None or str(value).strip().lower() in _skip:
             continue
         if fmt_func:
             cell_value = fmt_func(value)
