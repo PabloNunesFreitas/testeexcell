@@ -360,6 +360,14 @@ CELL_MAP = {
     "agencia":                 ("E32", None),
     "conta":                   ("B33", None),
     "tempo_experiencia":       ("B13", lambda v: f"Tempo: {v}"),
+    # Beneficiários
+    "benef1_nome":        ("A17", lambda v: f"Nome: {str(v).upper()}"),
+    "benef1_parentesco":  ("E17", lambda v: f"Parentesco: {str(v).upper()}"),
+    "benef1_cpf":         ("A18", lambda v: f"CPF:  {v}"),
+    "benef2_nome":        ("A19", lambda v: f"Nome: {str(v).upper()}"),
+    "benef2_parentesco":  ("E19", lambda v: f"Parentesco: {str(v).upper()}"),
+    "benef3_nome":        ("A20", lambda v: f"Nome: {str(v).upper()}"),
+    "benef3_parentesco":  ("E20", lambda v: f"Parentesco: {str(v).upper()}"),
 }
 
 FIELD_PRIORITY = {
@@ -794,6 +802,29 @@ def fill_excel(template_path: str, output_path: str, data: dict) -> list:
             ws["B8"] = age
 
     ws["H4"] = MESES_PT[datetime.today().month]
+
+    # Experiência na função: marca automaticamente com base nos dados
+    has_exp = bool(data.get("empresa_anterior") or data.get("tempo_experiencia"))
+    ws["A13"] = "Sim: X   Não:" if has_exp else "Sim:     Não: X"
+
+    # Já trabalhou na FIBRA?
+    if "ja_trabalhou_fibra" in data:
+        if str(data["ja_trabalhou_fibra"]).upper() == "SIM":
+            ws["D13"] = "Sim: X"
+            ws["F13"] = "Não:"
+        else:
+            ws["D13"] = "Sim:"
+            ws["F13"] = "Não: X"
+
+    # Vale transporte
+    if "vale_transporte" in data:
+        if str(data["vale_transporte"]).upper() == "SIM":
+            ws["C34"] = "SIM X"
+            ws["E34"] = "NÃO"
+        else:
+            ws["C34"] = "SIM"
+            ws["E34"] = "NÃO X"
+
     wb.save(output_path)
 
     missing = [

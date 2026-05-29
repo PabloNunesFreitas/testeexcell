@@ -540,7 +540,100 @@ def render_summary(uploaded: dict):
 # PROCESSAMENTO
 # ════════════════════════════════════════════════════════════
 
-def process_documents(uploaded: dict, km: GeminiKeyManager):
+def render_manual_section() -> dict:
+    """Coleta dados que não constam em documentos."""
+    manual: dict = {}
+
+    st.html("""
+    <div style="margin:1.5rem 0 .75rem;padding:.9rem 1.2rem;
+                background:linear-gradient(135deg,#f0f7ff,#e8f3ff);
+                border-radius:12px;border-left:4px solid #1d6fde;">
+        <p style="margin:0;font-size:.95rem;font-weight:700;color:#0d3060;
+                  font-family:'Inter',sans-serif;">✏️ Dados Complementares</p>
+        <p style="margin:.25rem 0 0;font-size:.82rem;color:#4a6fa5;
+                  font-family:'Inter',sans-serif;">
+            Informações que não constam nos documentos — todos os campos são opcionais.
+        </p>
+    </div>
+    """)
+
+    with st.expander("👤  Dados Pessoais", expanded=False):
+        col1, col2 = st.columns(2)
+        with col1:
+            ec = st.selectbox("Estado Civil",
+                ["", "Solteiro(a)", "Casado(a)", "Divorciado(a)",
+                 "Viúvo(a)", "União Estável", "Separado(a)"],
+                key="man_estado_civil")
+            if ec:
+                manual["estado_civil"] = ec
+        with col2:
+            np_ = st.text_input("Nome do Pai", key="man_nome_pai",
+                                placeholder="Nome completo do pai")
+            if np_:
+                manual["nome_pai"] = np_
+
+    with st.expander("🏦  Dados Bancários", expanded=False):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            b = st.text_input("Banco", key="man_banco", placeholder="Ex: Bradesco")
+            if b:
+                manual["banco"] = b
+        with col2:
+            ag = st.text_input("Agência", key="man_agencia", placeholder="Ex: 1234-5")
+            if ag:
+                manual["agencia"] = ag
+        with col3:
+            ct = st.text_input("Conta Corrente", key="man_conta",
+                               placeholder="Ex: 12345-6")
+            if ct:
+                manual["conta"] = ct
+
+    with st.expander("👨‍👩‍👧  Beneficiários", expanded=False):
+        PARENTESCOS = ["", "Cônjuge", "Filho(a)", "Mãe", "Pai",
+                       "Irmão/Irmã", "Sobrinho(a)", "Outro"]
+        for i in range(1, 4):
+            if i > 1:
+                st.divider()
+            st.html(f"""
+            <p style="font-size:.88rem;font-weight:700;color:#1e3a5f;
+                      margin:.3rem 0;font-family:'Inter',sans-serif;">
+                Beneficiário {i}
+            </p>""")
+            col1, col2 = st.columns([3, 2])
+            with col1:
+                n = st.text_input("Nome completo", key=f"man_b{i}_nome",
+                                  placeholder="Nome completo")
+                if n:
+                    manual[f"benef{i}_nome"] = n
+            with col2:
+                p = st.selectbox("Parentesco", PARENTESCOS, key=f"man_b{i}_par")
+                if p:
+                    manual[f"benef{i}_parentesco"] = p
+            if i == 1:
+                cpfb = st.text_input("CPF do beneficiário", key="man_b1_cpf",
+                                     placeholder="000.000.000-00")
+                if cpfb:
+                    manual["benef1_cpf"] = cpfb
+
+    with st.expander("🏭  Informações da Empresa", expanded=False):
+        col1, col2 = st.columns(2)
+        with col1:
+            fibra = st.radio("Já trabalhou na FIBRA?",
+                             ["Não informado", "Sim", "Não"],
+                             key="man_fibra", horizontal=True)
+            if fibra != "Não informado":
+                manual["ja_trabalhou_fibra"] = fibra
+        with col2:
+            vale = st.radio("Vale Transporte?",
+                            ["Não informado", "Sim", "Não"],
+                            key="man_vale", horizontal=True)
+            if vale != "Não informado":
+                manual["vale_transporte"] = vale
+
+    return manual
+
+
+def process_documents(uploaded: dict, km: GeminiKeyManager, manual_data: dict = None):
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_docs: dict = {}
         for doc_type, uf in uploaded.items():
@@ -590,7 +683,10 @@ def process_documents(uploaded: dict, km: GeminiKeyManager):
         </div>
         """)
 
-        merged     = merge_extracted_data(all_extractions)
+        merged = merge_extracted_data(all_extractions)
+        for k, v in (manual_data or {}).items():
+            if v and str(v).strip():
+                merged[k] = v
         nome       = str(merged.get("nome_completo", "CANDIDATO")).upper()
         nome_safe  = nome.replace(" ", "_").replace("/", "-")[:50]
         excel_name = f"SOLICITACAO_{nome_safe}.xlsx"
@@ -773,6 +869,7 @@ def main():
         """)
         uploaded = render_upload_tab()
         render_summary(uploaded)
+        manual_data = render_manual_section()
         st.markdown("<div style='height:.75rem'></div>", unsafe_allow_html=True)
 
         if st.button(
@@ -785,7 +882,7 @@ def main():
                 st.error("Nenhuma chave disponível. Adicione uma conta na barra lateral.")
             else:
                 with st.spinner("Processando com Gemini AI…"):
-                    process_documents(uploaded, km)
+                    process_documents(uploaded, km, manual_data)
                 if st.session_state.get("results"):
                     st.success("✅ Pronto! Clique na aba **📊 Resultado** para baixar o Excel.")
 
