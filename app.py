@@ -717,6 +717,231 @@ def process_documents(uploaded: dict, km: GeminiKeyManager, manual_data: dict = 
 
 
 # ════════════════════════════════════════════════════════════
+# FORMULÁRIO MANUAL DE CORREÇÃO
+# ════════════════════════════════════════════════════════════
+
+def render_manual_fill_section(r: dict):
+    """Formulário para preencher/corrigir campos após processamento Gemini."""
+    merged    = r["merged"]
+    miss_set  = {f for f, _ in r["missing_fields"]}
+
+    def _v(field):
+        return str(merged.get(field, "") or "")
+
+    def _lbl(field, label):
+        return f"⚠️ {label} *" if field in miss_set else label
+
+    def _exp(fields):
+        return any(f in miss_set for f in fields)
+
+    PARENTESCOS = ["", "Cônjuge", "Filho(a)", "Mãe", "Pai",
+                   "Irmão/Irmã", "Sobrinho(a)", "Outro"]
+    EC_OPTS = ["", "Solteiro(a)", "Casado(a)", "Divorciado(a)",
+               "Viúvo(a)", "União Estável", "Separado(a)"]
+    SIM_NAO = ["Não informado", "Sim", "Não"]
+
+    st.html("""
+    <div style="margin:1rem 0 .75rem;padding:.9rem 1.2rem;
+                background:linear-gradient(135deg,#fff7ed,#fef3c7);
+                border-radius:12px;border-left:4px solid #f59e0b;">
+        <p style="margin:0;font-size:.95rem;font-weight:700;color:#78350f;
+                  font-family:'Inter',sans-serif;">✏️ Corrigir / Completar Dados</p>
+        <p style="margin:.25rem 0 0;font-size:.82rem;color:#92400e;
+                  font-family:'Inter',sans-serif;">
+            Campos marcados com ⚠️ * estão faltando. Preencha e clique em
+            <b>Atualizar Excel</b> para gerar uma nova versão.
+        </p>
+    </div>
+    """)
+
+    with st.form("form_corrigir_dados"):
+
+        # ── Dados Pessoais ─────────────────────────────────
+        with st.expander("👤  Dados Pessoais",
+                         expanded=_exp(["nome_completo","data_nascimento",
+                                        "local_nascimento","estado_natal",
+                                        "estado_civil","nacionalidade",
+                                        "escolaridade","funcao"])):
+            c1, c2 = st.columns(2)
+            with c1:
+                nome        = st.text_input(_lbl("nome_completo","Nome Completo"),      value=_v("nome_completo"))
+                nasc        = st.text_input(_lbl("data_nascimento","Data de Nascimento"),value=_v("data_nascimento"), placeholder="DD/MM/AAAA")
+                local_nasc  = st.text_input(_lbl("local_nascimento","Cidade Natal"),     value=_v("local_nascimento"))
+                estado_nat  = st.text_input(_lbl("estado_natal","UF Nascimento"),        value=_v("estado_natal"), placeholder="SP")
+            with c2:
+                ec_idx      = EC_OPTS.index(_v("estado_civil")) if _v("estado_civil") in EC_OPTS else 0
+                estado_civ  = st.selectbox(_lbl("estado_civil","Estado Civil"), EC_OPTS, index=ec_idx)
+                nac         = st.text_input(_lbl("nacionalidade","Nacionalidade"),        value=_v("nacionalidade"), placeholder="BRASILEIRO(A)")
+                esc         = st.text_input(_lbl("escolaridade","Escolaridade"),          value=_v("escolaridade"), placeholder="ENSINO MÉDIO")
+                func        = st.text_input(_lbl("funcao","Função / Cargo"),              value=_v("funcao"))
+
+        # ── Filiação ───────────────────────────────────────
+        with st.expander("👪  Filiação",
+                         expanded=_exp(["nome_pai","nome_mae"])):
+            c1, c2 = st.columns(2)
+            with c1:
+                nome_pai = st.text_input(_lbl("nome_pai","Nome do Pai"), value=_v("nome_pai"))
+            with c2:
+                nome_mae = st.text_input(_lbl("nome_mae","Nome da Mãe"), value=_v("nome_mae"))
+
+        # ── Endereço & Contato ────────────────────────────
+        with st.expander("🏠  Endereço & Contato",
+                         expanded=_exp(["endereco","cep","bairro",
+                                        "estado_residencia","telefone"])):
+            c1, c2 = st.columns(2)
+            with c1:
+                endereco   = st.text_input(_lbl("endereco","Endereço"),  value=_v("endereco"))
+                bairro     = st.text_input(_lbl("bairro","Bairro"),      value=_v("bairro"))
+            with c2:
+                cep        = st.text_input(_lbl("cep","CEP"),            value=_v("cep"))
+                ca, cb     = st.columns(2)
+                with ca:
+                    est_res = st.text_input(_lbl("estado_residencia","UF"), value=_v("estado_residencia"), placeholder="SP")
+                with cb:
+                    telefone = st.text_input(_lbl("telefone","Telefone"), value=_v("telefone"))
+
+        # ── Documentos ────────────────────────────────────
+        with st.expander("📄  Documentos",
+                         expanded=_exp(["numero_rg","numero_cpf","numero_carteira",
+                                        "pis","numero_titulo","data_emissao_rg",
+                                        "data_emissao_carteira"])):
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                st.markdown("**RG**")
+                num_rg  = st.text_input(_lbl("numero_rg","Número RG"),          value=_v("numero_rg"))
+                est_rg  = st.text_input(_lbl("estado_emissor_rg","UF Emissor"),  value=_v("estado_emissor_rg"))
+                dat_rg  = st.text_input(_lbl("data_emissao_rg","Data Emissão"),  value=_v("data_emissao_rg"), placeholder="DD/MM/AAAA")
+            with c2:
+                st.markdown("**CTPS & CPF**")
+                num_cpf  = st.text_input(_lbl("numero_cpf","CPF"),               value=_v("numero_cpf"))
+                num_ctps = st.text_input(_lbl("numero_carteira","Nº CTPS"),       value=_v("numero_carteira"))
+                ser_ctps = st.text_input(_lbl("serie_carteira","Série CTPS"),     value=_v("serie_carteira"))
+                est_ctps = st.text_input(_lbl("estado_emissor_carteira","UF CTPS"),value=_v("estado_emissor_carteira"))
+                dat_ctps = st.text_input(_lbl("data_emissao_carteira","Data CTPS"),value=_v("data_emissao_carteira"), placeholder="DD/MM/AAAA")
+            with c3:
+                st.markdown("**Outros**")
+                pis      = st.text_input(_lbl("pis","PIS/NIT"),                  value=_v("pis"))
+                num_tit  = st.text_input(_lbl("numero_titulo","Nº Título Eleitor"),value=_v("numero_titulo"))
+                zona     = st.text_input(_lbl("zona_eleitoral","Zona"),           value=_v("zona_eleitoral"))
+                secao    = st.text_input(_lbl("secao_eleitoral","Seção"),         value=_v("secao_eleitoral"))
+                num_res  = st.text_input("Nº Reservista",                         value=_v("numero_reservista"))
+
+        # ── Experiência Profissional ───────────────────────
+        with st.expander("💼  Experiência Profissional", expanded=False):
+            c1, c2 = st.columns(2)
+            with c1:
+                emp_ant   = st.text_input("Empresa Anterior",    value=_v("empresa_anterior"))
+                cargo_ant = st.text_input("Cargo Anterior",      value=_v("cargo_anterior"))
+                tempo_exp = st.text_input("Tempo de Experiência",value=_v("tempo_experiencia"), placeholder="Ex: 5 anos")
+            with c2:
+                adm_ant = st.text_input("Data Admissão",  value=_v("data_admissao_anterior"), placeholder="DD/MM/AAAA")
+                dem_ant = st.text_input("Data Demissão",  value=_v("data_demissao_anterior"), placeholder="DD/MM/AAAA")
+                motivo  = st.text_input("Motivo da Saída",value=_v("motivo_saida"))
+
+        # ── Empresa & Benefícios ──────────────────────────
+        with st.expander("🏭  Empresa & Benefícios", expanded=False):
+            c1, c2 = st.columns(2)
+            with c1:
+                fibra_idx = SIM_NAO.index(merged.get("ja_trabalhou_fibra","Não informado")) \
+                            if merged.get("ja_trabalhou_fibra","Não informado") in SIM_NAO else 0
+                fibra = st.selectbox("Já trabalhou na FIBRA?", SIM_NAO, index=fibra_idx)
+            with c2:
+                vale_idx = SIM_NAO.index(merged.get("vale_transporte","Não informado")) \
+                           if merged.get("vale_transporte","Não informado") in SIM_NAO else 0
+                vale = st.selectbox("Vale Transporte?", SIM_NAO, index=vale_idx)
+
+        # ── Beneficiários ─────────────────────────────────
+        with st.expander("👨‍👩‍👧  Beneficiários", expanded=False):
+            benef_vals: dict = {}
+            for i in range(1, 4):
+                if i > 1:
+                    st.divider()
+                st.markdown(f"**Beneficiário {i}**")
+                bc1, bc2 = st.columns([3, 2])
+                with bc1:
+                    bnom = st.text_input("Nome", value=_v(f"benef{i}_nome"), key=f"mf_b{i}_n")
+                    benef_vals[f"benef{i}_nome"] = bnom
+                with bc2:
+                    cur_p = _v(f"benef{i}_parentesco")
+                    p_idx = PARENTESCOS.index(cur_p) if cur_p in PARENTESCOS else 0
+                    bpar = st.selectbox("Parentesco", PARENTESCOS, index=p_idx, key=f"mf_b{i}_p")
+                    benef_vals[f"benef{i}_parentesco"] = bpar
+                if i == 1:
+                    bcpf = st.text_input("CPF do Beneficiário 1", value=_v("benef1_cpf"), key="mf_b1_cpf")
+                    benef_vals["benef1_cpf"] = bcpf
+
+        # ── Dados Bancários ───────────────────────────────
+        with st.expander("🏦  Dados Bancários", expanded=False):
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                banco   = st.text_input("Banco",   value=_v("banco"))
+            with c2:
+                agencia = st.text_input("Agência", value=_v("agencia"))
+            with c3:
+                conta   = st.text_input("Conta",   value=_v("conta"))
+
+        submitted = st.form_submit_button(
+            "🔄   Atualizar Excel com esses dados",
+            type="primary", use_container_width=True,
+        )
+
+    if submitted:
+        _skip = {"", "null", "none", "n/a", "não informado", "nao informado", "-", "--"}
+
+        updates = {
+            "nome_completo": nome,    "data_nascimento": nasc,
+            "local_nascimento": local_nasc, "estado_natal": estado_nat,
+            "estado_civil": estado_civ, "nacionalidade": nac,
+            "escolaridade": esc,      "funcao": func,
+            "nome_pai": nome_pai,     "nome_mae": nome_mae,
+            "endereco": endereco,     "bairro": bairro,
+            "cep": cep,               "estado_residencia": est_res,
+            "telefone": telefone,
+            "numero_rg": num_rg,      "estado_emissor_rg": est_rg,
+            "data_emissao_rg": dat_rg,
+            "numero_cpf": num_cpf,    "numero_carteira": num_ctps,
+            "serie_carteira": ser_ctps, "estado_emissor_carteira": est_ctps,
+            "data_emissao_carteira": dat_ctps,
+            "pis": pis,               "numero_titulo": num_tit,
+            "zona_eleitoral": zona,   "secao_eleitoral": secao,
+            "numero_reservista": num_res,
+            "empresa_anterior": emp_ant, "cargo_anterior": cargo_ant,
+            "tempo_experiencia": tempo_exp,
+            "data_admissao_anterior": adm_ant, "data_demissao_anterior": dem_ant,
+            "motivo_saida": motivo,
+            "banco": banco,           "agencia": agencia, "conta": conta,
+            **benef_vals,
+        }
+        if fibra != "Não informado":
+            updates["ja_trabalhou_fibra"] = fibra
+        if vale != "Não informado":
+            updates["vale_transporte"] = vale
+
+        final = dict(merged)
+        for k, v in updates.items():
+            if v and str(v).strip().lower() not in _skip:
+                final[k] = v
+
+        with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+            tmp_path = tmp.name
+        try:
+            fill_excel(str(TEMPLATE_PATH), tmp_path, final)
+            with open(tmp_path, "rb") as f:
+                new_bytes = f.read()
+        finally:
+            os.unlink(tmp_path)
+
+        missing_new = [(field, label)
+                       for field, label in REQUIRED_FIELDS.items()
+                       if not final.get(field)]
+        st.session_state["results"]["excel_bytes"]    = new_bytes
+        st.session_state["results"]["merged"]         = final
+        st.session_state["results"]["missing_fields"] = missing_new
+        st.success("✅ Excel atualizado! Use o botão de download acima.")
+        st.rerun()
+
+
+# ════════════════════════════════════════════════════════════
 # ABA RESULTADO
 # ════════════════════════════════════════════════════════════
 
@@ -796,28 +1021,12 @@ def render_result_tab():
 
     st.markdown("<div style='height:.5rem'></div>", unsafe_allow_html=True)
 
-    # Campos faltando
-    if r["missing_fields"]:
-        items_html = "".join(
-            f"<li style='margin:.35rem 0;'>{label}</li>"
-            for _, label in r["missing_fields"]
-        )
-        st.html(f"""
-        <div style="background:#fffbeb;border:1px solid #fbbf24;
-                    border-left:4px solid #f59e0b;border-radius:12px;
-                    padding:1.2rem 1.5rem;margin-bottom:1rem;">
-            <p style="margin:0 0 .6rem;font-weight:700;font-size:.93rem;color:#78350f;
-                      font-family:'Inter',sans-serif;">
-                ⚠️ {len(r['missing_fields'])} campo(s) para preencher manualmente no Excel:
-            </p>
-            <ul style="margin:0;padding-left:1.2rem;font-size:.88rem;color:#78350f;
-                       font-family:'Inter',sans-serif;line-height:1.8;">
-                {items_html}
-            </ul>
-        </div>
-        """)
-    else:
+    if not r["missing_fields"]:
         st.success("🎉 Todos os campos obrigatórios foram preenchidos automaticamente!")
+
+    st.divider()
+
+    render_manual_fill_section(r)
 
     st.divider()
 
