@@ -571,6 +571,12 @@ def render_manual_section() -> dict:
                                 placeholder="Nome completo do pai")
             if np_:
                 manual["nome_pai"] = np_
+        col3, col4 = st.columns(2)
+        with col3:
+            nm_ = st.text_input("Nome da Mãe", key="man_nome_mae",
+                                placeholder="Nome completo da mãe")
+            if nm_:
+                manual["nome_mae"] = nm_
 
     with st.expander("🏦  Dados Bancários", expanded=False):
         col1, col2, col3 = st.columns(3)

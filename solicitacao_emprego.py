@@ -416,19 +416,21 @@ FIELD_PRIORITY = {
 
 EXTRACTION_PROMPTS = {
     "rg_frente": """Analise esta imagem do RG (Registro Geral) brasileiro - frente.
+O campo FILIAÇÃO contém os nomes do pai e da mãe — leia-os com atenção nessa seção.
 Retorne APENAS JSON válido com estes campos (null se não visível):
 {
-  "nome_completo": "nome completo",
+  "nome_completo": "nome completo do titular",
   "data_nascimento": "DD/MM/AAAA",
-  "local_nascimento": "cidade",
+  "local_nascimento": "cidade de nascimento",
   "estado_natal": "sigla UF ex: SP",
-  "nome_pai": "nome do pai",
-  "nome_mae": "nome da mãe",
+  "nome_pai": "nome do pai conforme seção FILIAÇÃO",
+  "nome_mae": "nome da mãe conforme seção FILIAÇÃO",
   "numero_rg": "número do RG",
   "orgao_emissor": "ex: SSP",
-  "estado_emissor_rg": "sigla UF",
+  "estado_emissor_rg": "sigla UF do emissor",
   "data_emissao_rg": "DD/MM/AAAA"
-}""",
+}
+IMPORTANTE: A seção FILIAÇÃO aparece no RG com os nomes do pai e da mãe separados. Extraia ambos.""",
 
     "rg_verso": """Analise o verso deste RG brasileiro.
 Retorne APENAS JSON válido:
@@ -437,13 +439,17 @@ Retorne APENAS JSON válido:
   "profissao": "profissão se indicada"
 }""",
 
-    "cpf_frente": """Analise este documento CPF brasileiro.
+    "cpf_frente": """Analise este documento do CPF (Cadastro de Pessoa Física) brasileiro.
+Pode ser o cartão físico do CPF, o comprovante de inscrição da Receita Federal,
+ou qualquer documento que exiba o número do CPF.
+O número do CPF aparece no formato XXX.XXX.XXX-XX ou XXXXXXXXXXX.
 Retorne APENAS JSON válido:
 {
-  "numero_cpf": "CPF no formato XXX.XXX.XXX-XX",
-  "nome_completo": "nome completo",
-  "data_nascimento": "DD/MM/AAAA"
-}""",
+  "numero_cpf": "número CPF completo no formato XXX.XXX.XXX-XX",
+  "nome_completo": "nome completo do titular se visível",
+  "data_nascimento": "DD/MM/AAAA se visível"
+}
+IMPORTANTE: O número do CPF tem 11 dígitos. Copie-o exatamente como aparece no documento.""",
 
     "cpf_verso": """Analise o verso deste CPF.
 Retorne APENAS JSON válido:
