@@ -377,10 +377,11 @@ FIELD_PRIORITY = {
                                 "carteira_trabalho_digital", "titulo_eleitor", "certificado_reservista"],
     "local_nascimento":        ["rg_frente", "cnh", "carteira_trabalho", "certificado_reservista"],
     "estado_natal":            ["rg_frente", "cnh", "carteira_trabalho", "certificado_reservista"],
-    "nome_pai":                ["rg_frente", "cnh", "carteira_trabalho", "carteira_trabalho_digital",
-                                "titulo_eleitor", "certificado_reservista"],
-    "nome_mae":                ["rg_frente", "cnh", "carteira_trabalho", "carteira_trabalho_digital",
-                                "titulo_eleitor", "certificado_reservista", "cartao_vacina_frente"],
+    "nome_pai":                ["rg_frente", "rg_verso", "cnh", "carteira_trabalho",
+                                "carteira_trabalho_digital", "titulo_eleitor", "certificado_reservista"],
+    "nome_mae":                ["rg_frente", "rg_verso", "cnh", "carteira_trabalho",
+                                "carteira_trabalho_digital", "titulo_eleitor",
+                                "certificado_reservista", "cartao_vacina_frente"],
     "numero_rg":               ["rg_frente", "cnh"],
     "estado_emissor_rg":       ["rg_frente", "cnh"],
     "data_emissao_rg":         ["rg_frente", "cnh"],
@@ -422,31 +423,38 @@ FIELD_PRIORITY = {
 EXTRACTION_PROMPTS = {
     "rg_frente": """Analise esta imagem do RG (Registro Geral) brasileiro - frente.
 Leia com atenção TODAS as seções: NOME, FILIAÇÃO, NATURALIDADE, DATA DE NASCIMENTO, REGISTRO, EXPEDIÇÃO.
-A seção FILIAÇÃO contém os nomes do pai e da mãe separados — extraia os dois.
+O RG SEMPRE possui a seção FILIAÇÃO com os nomes do pai e da mãe — ambos devem ser extraídos obrigatoriamente.
 Retorne APENAS JSON válido (null para campos não visíveis):
 {
   "nome_completo": "nome completo do titular em maiúsculas",
   "data_nascimento": "DD/MM/AAAA",
   "local_nascimento": "cidade de nascimento (NATURALIDADE)",
   "estado_natal": "sigla UF de nascimento ex: SP",
-  "nome_pai": "nome do pai conforme seção FILIAÇÃO",
-  "nome_mae": "nome da mãe conforme seção FILIAÇÃO",
+  "nome_pai": "nome COMPLETO do pai — seção FILIAÇÃO, primeira linha",
+  "nome_mae": "nome COMPLETO da mãe — seção FILIAÇÃO, segunda linha",
   "numero_rg": "número do RG incluindo dígito verificador ex: 12.345.678-9",
   "orgao_emissor": "órgão emissor ex: SSP, DETRAN, SESP",
   "estado_emissor_rg": "sigla UF do órgão emissor",
   "data_emissao_rg": "DD/MM/AAAA",
   "nacionalidade": "nacionalidade se visível ex: BRASILEIRO"
 }
-REGRAS: Copie os nomes exatamente como estão impressos. FILIAÇÃO sempre tem pai E mãe em linhas separadas.""",
+REGRAS OBRIGATÓRIAS:
+- A seção FILIAÇÃO aparece em todos os RGs brasileiros. Procure-a independentemente do modelo do RG.
+- nome_pai = primeiro nome listado na filiação (pai)
+- nome_mae = segundo nome listado na filiação (mãe)
+- Copie os nomes exatamente como estão impressos, sem abreviar.""",
 
     "rg_verso": """Analise o verso deste RG brasileiro.
-O verso pode conter CPF, profissão, assinatura e outros dados.
+O verso pode conter CPF, profissão, filiação repetida e outros dados pessoais.
+Em alguns modelos de RG a FILIAÇÃO (nomes do pai e da mãe) aparece no verso — extraia se visível.
 Retorne APENAS JSON válido (null para campos não visíveis):
 {
   "cpf_no_rg": "CPF se impresso no formato XXX.XXX.XXX-XX",
   "profissao": "profissão ou ocupação se indicada",
-  "nome_completo": "nome se repetido no verso",
-  "numero_rg": "número do RG se visível no verso"
+  "nome_completo": "nome do titular se visível no verso",
+  "numero_rg": "número do RG se visível no verso",
+  "nome_pai": "nome do pai se visível na filiação do verso",
+  "nome_mae": "nome da mãe se visível na filiação do verso"
 }""",
 
     "cpf_frente": """Analise este documento do CPF (Cadastro de Pessoa Física) brasileiro.
