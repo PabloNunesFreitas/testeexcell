@@ -65,7 +65,9 @@ def inject_css():
     .stApp { background: #eef2f7; }
     .main .block-container { padding: 1.5rem 2rem 3rem; max-width: 1200px; }
     #MainMenu, footer { visibility: hidden; }
-    [data-testid="stDeployButton"] { display:none; }
+    [data-testid="stDeployButton"] { display:none !important; }
+    header[data-testid="stHeader"] { display:none !important; }
+    .stAppDeployButton { display:none !important; }
 
     /* SIDEBAR */
     [data-testid="stSidebar"] {
