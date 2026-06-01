@@ -478,19 +478,24 @@ Pode ser a página de identificação ou de contratos. Retorne APENAS JSON váli
 }""",
 
     "carteira_trabalho_digital": """Analise esta Carteira de Trabalho Digital brasileira.
+Pode ser a tela de identificação do trabalhador OU uma listagem de contratos digitais (CTPSContratosDigitais).
+Extraia todos os dados disponíveis. O PIS/NIT geralmente aparece na seção de identificação.
 Retorne APENAS JSON válido:
 {
-  "nome_completo": "nome completo",
+  "nome_completo": "nome completo do trabalhador",
   "data_nascimento": "DD/MM/AAAA",
-  "numero_cpf": "CPF",
-  "pis": "PIS/NIT",
-  "estado_civil": "estado civil",
-  "empresa_anterior": "empresa mais recente",
+  "numero_cpf": "CPF no formato XXX.XXX.XXX-XX",
+  "pis": "PIS/NIT completo com pontos e traço ex: 123.45678.12-3",
+  "estado_civil": "estado civil se visível",
+  "nome_pai": "nome do pai se visível",
+  "nome_mae": "nome da mãe se visível",
+  "empresa_anterior": "empresa mais recente ou atual",
   "cargo_anterior": "cargo mais recente",
-  "data_admissao_anterior": "DD/MM/AAAA",
-  "data_demissao_anterior": "DD/MM/AAAA ou null",
+  "data_admissao_anterior": "DD/MM/AAAA da admissão mais recente",
+  "data_demissao_anterior": "DD/MM/AAAA da demissão ou null se ainda ativo",
   "motivo_saida": "motivo da saída ou null"
-}""",
+}
+IMPORTANTE: Se for uma listagem de contratos, use o contrato mais recente para empresa/cargo/datas.""",
 
     "cnh": """Analise esta CNH (Carteira Nacional de Habilitação) brasileira.
 Retorne APENAS JSON válido:
