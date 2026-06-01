@@ -371,16 +371,21 @@ CELL_MAP = {
 }
 
 FIELD_PRIORITY = {
-    "nome_completo":           ["rg_frente", "carteira_trabalho", "cpf_frente", "cnh", "curriculo"],
-    "data_nascimento":         ["rg_frente", "carteira_trabalho", "cnh", "cpf_frente"],
-    "local_nascimento":        ["rg_frente", "carteira_trabalho", "cnh"],
-    "estado_natal":            ["rg_frente", "carteira_trabalho", "cnh"],
-    "nome_pai":                ["rg_frente", "carteira_trabalho", "cnh"],
-    "nome_mae":                ["rg_frente", "carteira_trabalho", "cnh"],
-    "numero_rg":               ["rg_frente"],
-    "estado_emissor_rg":       ["rg_frente"],
-    "data_emissao_rg":         ["rg_frente"],
-    "numero_cpf":              ["cpf_frente", "rg_verso", "carteira_trabalho_digital", "cnh"],
+    "nome_completo":           ["rg_frente", "cnh", "carteira_trabalho", "cpf_frente",
+                                "carteira_trabalho_digital", "titulo_eleitor", "curriculo"],
+    "data_nascimento":         ["rg_frente", "cnh", "carteira_trabalho", "cpf_frente",
+                                "carteira_trabalho_digital", "titulo_eleitor", "certificado_reservista"],
+    "local_nascimento":        ["rg_frente", "cnh", "carteira_trabalho", "certificado_reservista"],
+    "estado_natal":            ["rg_frente", "cnh", "carteira_trabalho", "certificado_reservista"],
+    "nome_pai":                ["rg_frente", "cnh", "carteira_trabalho", "carteira_trabalho_digital",
+                                "titulo_eleitor", "certificado_reservista"],
+    "nome_mae":                ["rg_frente", "cnh", "carteira_trabalho", "carteira_trabalho_digital",
+                                "titulo_eleitor", "certificado_reservista", "cartao_vacina_frente"],
+    "numero_rg":               ["rg_frente", "cnh"],
+    "estado_emissor_rg":       ["rg_frente", "cnh"],
+    "data_emissao_rg":         ["rg_frente", "cnh"],
+    "numero_cpf":              ["cpf_frente", "cpf_verso", "cnh", "carteira_trabalho_digital",
+                                "rg_verso", "carteira_trabalho", "comprovante_residencia"],
     "numero_carteira":         ["carteira_trabalho"],
     "serie_carteira":          ["carteira_trabalho"],
     "estado_emissor_carteira": ["carteira_trabalho"],
@@ -392,11 +397,11 @@ FIELD_PRIORITY = {
     "numero_reservista":       ["certificado_reservista"],
     "serie_reservista":        ["certificado_reservista"],
     "categoria_reservista":    ["certificado_reservista"],
-    "endereco":                ["comprovante_residencia"],
-    "cep":                     ["comprovante_residencia"],
-    "bairro":                  ["comprovante_residencia"],
-    "estado_residencia":       ["comprovante_residencia"],
-    "telefone":                ["curriculo"],
+    "endereco":                ["comprovante_residencia", "curriculo"],
+    "cep":                     ["comprovante_residencia", "curriculo"],
+    "bairro":                  ["comprovante_residencia", "curriculo"],
+    "estado_residencia":       ["comprovante_residencia", "curriculo"],
+    "telefone":                ["curriculo", "comprovante_residencia"],
     "funcao":                  ["curriculo"],
     "escolaridade":            ["historico_escolar", "certificado_conclusao", "curriculo"],
     "empresa_anterior":        ["carteira_trabalho_digital", "carteira_trabalho", "curriculo"],
@@ -405,8 +410,8 @@ FIELD_PRIORITY = {
     "data_demissao_anterior":  ["carteira_trabalho_digital", "carteira_trabalho", "curriculo"],
     "motivo_saida":            ["carteira_trabalho_digital", "carteira_trabalho", "curriculo"],
     "endereco_empresa":        ["curriculo"],
-    "estado_civil":            ["carteira_trabalho"],
-    "nacionalidade":           ["carteira_trabalho", "rg_frente"],
+    "estado_civil":            ["carteira_trabalho", "carteira_trabalho_digital", "curriculo"],
+    "nacionalidade":           ["rg_frente", "cnh", "carteira_trabalho", "carteira_trabalho_digital"],
     "tempo_experiencia":       ["curriculo"],
 }
 
@@ -416,71 +421,86 @@ FIELD_PRIORITY = {
 
 EXTRACTION_PROMPTS = {
     "rg_frente": """Analise esta imagem do RG (Registro Geral) brasileiro - frente.
-O campo FILIAÇÃO contém os nomes do pai e da mãe — leia-os com atenção nessa seção.
-Retorne APENAS JSON válido com estes campos (null se não visível):
+Leia com atenção TODAS as seções: NOME, FILIAÇÃO, NATURALIDADE, DATA DE NASCIMENTO, REGISTRO, EXPEDIÇÃO.
+A seção FILIAÇÃO contém os nomes do pai e da mãe separados — extraia os dois.
+Retorne APENAS JSON válido (null para campos não visíveis):
 {
-  "nome_completo": "nome completo do titular",
+  "nome_completo": "nome completo do titular em maiúsculas",
   "data_nascimento": "DD/MM/AAAA",
-  "local_nascimento": "cidade de nascimento",
-  "estado_natal": "sigla UF ex: SP",
+  "local_nascimento": "cidade de nascimento (NATURALIDADE)",
+  "estado_natal": "sigla UF de nascimento ex: SP",
   "nome_pai": "nome do pai conforme seção FILIAÇÃO",
   "nome_mae": "nome da mãe conforme seção FILIAÇÃO",
-  "numero_rg": "número do RG",
-  "orgao_emissor": "ex: SSP",
-  "estado_emissor_rg": "sigla UF do emissor",
-  "data_emissao_rg": "DD/MM/AAAA"
+  "numero_rg": "número do RG incluindo dígito verificador ex: 12.345.678-9",
+  "orgao_emissor": "órgão emissor ex: SSP, DETRAN, SESP",
+  "estado_emissor_rg": "sigla UF do órgão emissor",
+  "data_emissao_rg": "DD/MM/AAAA",
+  "nacionalidade": "nacionalidade se visível ex: BRASILEIRO"
 }
-IMPORTANTE: A seção FILIAÇÃO aparece no RG com os nomes do pai e da mãe separados. Extraia ambos.""",
+REGRAS: Copie os nomes exatamente como estão impressos. FILIAÇÃO sempre tem pai E mãe em linhas separadas.""",
 
     "rg_verso": """Analise o verso deste RG brasileiro.
-Retorne APENAS JSON válido:
+O verso pode conter CPF, profissão, assinatura e outros dados.
+Retorne APENAS JSON válido (null para campos não visíveis):
 {
-  "cpf_no_rg": "CPF se impresso",
-  "profissao": "profissão se indicada"
+  "cpf_no_rg": "CPF se impresso no formato XXX.XXX.XXX-XX",
+  "profissao": "profissão ou ocupação se indicada",
+  "nome_completo": "nome se repetido no verso",
+  "numero_rg": "número do RG se visível no verso"
 }""",
 
     "cpf_frente": """Analise este documento do CPF (Cadastro de Pessoa Física) brasileiro.
-Pode ser o cartão físico do CPF, o comprovante de inscrição da Receita Federal,
-ou qualquer documento que exiba o número do CPF.
-O número do CPF aparece no formato XXX.XXX.XXX-XX ou XXXXXXXXXXX.
-Retorne APENAS JSON válido:
+Pode ser: cartão físico do CPF, comprovante de situação cadastral da Receita Federal,
+extrato online impresso, ou qualquer documento oficial com o número do CPF.
+O número CPF tem 11 dígitos no formato XXX.XXX.XXX-XX.
+Retorne APENAS JSON válido (null para campos não visíveis):
 {
-  "numero_cpf": "número CPF completo no formato XXX.XXX.XXX-XX",
-  "nome_completo": "nome completo do titular se visível",
-  "data_nascimento": "DD/MM/AAAA se visível"
+  "numero_cpf": "CPF completo no formato XXX.XXX.XXX-XX",
+  "nome_completo": "nome completo do titular",
+  "data_nascimento": "DD/MM/AAAA se visível",
+  "situacao_cadastral": "situação ex: REGULAR se visível"
 }
-IMPORTANTE: O número do CPF tem 11 dígitos. Copie-o exatamente como aparece no documento.""",
+IMPORTANTE: Copie os 11 dígitos do CPF exatamente como aparecem no documento.""",
 
-    "cpf_verso": """Analise o verso deste CPF.
-Retorne APENAS JSON válido:
-{"informacoes_adicionais": "qualquer informação relevante"}""",
-
-    "carteira_trabalho": """Analise esta Carteira de Trabalho e Previdência Social (CTPS) brasileira.
-Pode ser a página de identificação ou de contratos. Retorne APENAS JSON válido:
+    "cpf_verso": """Analise o verso deste documento de CPF.
+Retorne APENAS JSON válido (null para campos não visíveis):
 {
-  "numero_carteira": "número da CTPS",
-  "serie_carteira": "série",
-  "estado_emissor_carteira": "sigla UF",
-  "data_emissao_carteira": "DD/MM/AAAA",
-  "nome_completo": "nome completo",
-  "data_nascimento": "DD/MM/AAAA",
-  "local_nascimento": "cidade",
-  "estado_natal": "sigla UF",
-  "nome_pai": "nome do pai",
-  "nome_mae": "nome da mãe",
-  "nacionalidade": "nacionalidade",
-  "estado_civil": "estado civil",
-  "pis": "PIS/NIT se presente",
-  "empresa_anterior": "última empresa registrada",
-  "cargo_anterior": "último cargo",
-  "data_admissao_anterior": "DD/MM/AAAA",
-  "data_demissao_anterior": "DD/MM/AAAA ou null"
+  "numero_cpf": "CPF se visível no verso",
+  "nome_completo": "nome se visível",
+  "informacoes_adicionais": "qualquer outra informação relevante"
 }""",
 
+    "carteira_trabalho": """Analise esta Carteira de Trabalho e Previdência Social (CTPS) brasileira física.
+Pode ser a página de identificação pessoal, página de qualificações ou página de contratos de trabalho.
+Extraia TODOS os dados visíveis. O PIS/NIT pode aparecer na página de qualificação civil ou no cabeçalho.
+Retorne APENAS JSON válido (null para campos não visíveis):
+{
+  "numero_carteira": "número da CTPS",
+  "serie_carteira": "série da CTPS",
+  "estado_emissor_carteira": "sigla UF emissora",
+  "data_emissao_carteira": "DD/MM/AAAA de emissão da CTPS",
+  "nome_completo": "nome completo do trabalhador",
+  "data_nascimento": "DD/MM/AAAA",
+  "local_nascimento": "cidade de nascimento",
+  "estado_natal": "sigla UF de nascimento",
+  "nome_pai": "nome do pai",
+  "nome_mae": "nome da mãe",
+  "nacionalidade": "nacionalidade ex: BRASILEIRO",
+  "estado_civil": "estado civil",
+  "pis": "número PIS/NIT com pontos e traço ex: 123.45678.12-3",
+  "numero_cpf": "CPF se visível",
+  "empresa_anterior": "último empregador registrado",
+  "cargo_anterior": "última função/cargo registrado",
+  "data_admissao_anterior": "DD/MM/AAAA da última admissão",
+  "data_demissao_anterior": "DD/MM/AAAA da última demissão ou null",
+  "motivo_saida": "motivo da rescisão se visível"
+}
+REGRA: Se for página de contratos, use o contrato mais recente.""",
+
     "carteira_trabalho_digital": """Analise esta Carteira de Trabalho Digital brasileira.
-Pode ser a tela de identificação do trabalhador OU uma listagem de contratos digitais (CTPSContratosDigitais).
-Extraia todos os dados disponíveis. O PIS/NIT geralmente aparece na seção de identificação.
-Retorne APENAS JSON válido:
+Pode ser: tela de identificação do trabalhador, extrato de vínculos, ou CTPSContratosDigitais (listagem de contratos).
+Extraia TODOS os dados disponíveis em qualquer seção do documento.
+Retorne APENAS JSON válido (null para campos não visíveis):
 {
   "nome_completo": "nome completo do trabalhador",
   "data_nascimento": "DD/MM/AAAA",
@@ -489,106 +509,137 @@ Retorne APENAS JSON válido:
   "estado_civil": "estado civil se visível",
   "nome_pai": "nome do pai se visível",
   "nome_mae": "nome da mãe se visível",
+  "nacionalidade": "nacionalidade se visível",
+  "empresa_anterior": "empresa do vínculo mais recente",
+  "cargo_anterior": "cargo/função mais recente",
+  "data_admissao_anterior": "DD/MM/AAAA da admissão mais recente",
+  "data_demissao_anterior": "DD/MM/AAAA da demissão mais recente ou null se ativo",
+  "motivo_saida": "motivo da rescisão mais recente ou null"
+}
+REGRA: Em listagem de contratos, use sempre o contrato com data de admissão mais recente.""",
+
+    "cnh": """Analise esta CNH (Carteira Nacional de Habilitação) brasileira.
+A CNH contém dados pessoais completos incluindo FILIAÇÃO, CPF, RG e naturalidade.
+Retorne APENAS JSON válido (null para campos não visíveis):
+{
+  "nome_completo": "nome completo do habilitado",
+  "numero_cpf": "CPF no formato XXX.XXX.XXX-XX",
+  "numero_rg": "número do RG se impresso na CNH",
+  "data_nascimento": "DD/MM/AAAA",
+  "local_nascimento": "cidade de nascimento (NATURALIDADE)",
+  "estado_natal": "sigla UF de nascimento",
+  "nome_pai": "nome do pai",
+  "nome_mae": "nome da mãe",
+  "nacionalidade": "nacionalidade ex: BRASILEIRO",
+  "data_emissao_rg": "data de emissão do RG se visível",
+  "estado_emissor_rg": "UF emissor do RG se visível",
+  "validade_cnh": "DD/MM/AAAA de validade da CNH",
+  "categoria_cnh": "categoria ex: B, AB, C"
+}""",
+
+    "comprovante_residencia": """Analise este comprovante de residência brasileiro.
+Pode ser conta de luz (CPFL, ENEL, etc.), água (SABESP, etc.), gás, telefone, internet ou extrato bancário.
+Extraia o endereço completo e dados do titular.
+Retorne APENAS JSON válido (null para campos não visíveis):
+{
+  "nome_titular": "nome completo do titular da conta",
+  "endereco_logradouro": "tipo e nome da rua/avenida com número ex: RUA DAS FLORES 123",
+  "complemento": "apto, bloco, casa etc. ou null",
+  "bairro": "bairro",
+  "cidade": "cidade/município",
+  "estado_residencia": "sigla UF ex: SP",
+  "cep": "CEP no formato XXXXX-XXX ou XXXXXXXX",
+  "telefone": "telefone de contato se impresso na conta",
+  "numero_cpf": "CPF do titular se impresso no documento"
+}
+REGRA: O endereço de entrega/cobrança é o endereço de residência — use ele, não o endereço da empresa.""",
+
+    "curriculo": """Analise este currículo profissional e extraia todas as informações disponíveis.
+Retorne APENAS JSON válido (null para campos não visíveis):
+{
+  "nome_completo": "nome completo",
+  "telefone": "telefone com DDD ex: (11) 99999-9999",
+  "email": "endereço de e-mail",
+  "funcao": "cargo ou objetivo profissional em MAIÚSCULAS",
+  "escolaridade": "apenas: ENSINO FUNDAMENTAL, ENSINO MÉDIO ou ENSINO SUPERIOR",
+  "data_nascimento": "DD/MM/AAAA se informada",
+  "endereco": "endereço residencial se informado",
+  "bairro": "bairro se informado",
+  "cep": "CEP se informado",
+  "estado_residencia": "sigla UF de residência se informada",
+  "estado_civil": "estado civil se informado",
   "empresa_anterior": "empresa mais recente ou atual",
   "cargo_anterior": "cargo mais recente",
   "data_admissao_anterior": "DD/MM/AAAA da admissão mais recente",
-  "data_demissao_anterior": "DD/MM/AAAA da demissão ou null se ainda ativo",
-  "motivo_saida": "motivo da saída ou null"
-}
-IMPORTANTE: Se for uma listagem de contratos, use o contrato mais recente para empresa/cargo/datas.""",
-
-    "cnh": """Analise esta CNH (Carteira Nacional de Habilitação) brasileira.
-Retorne APENAS JSON válido:
-{
-  "nome_completo": "nome completo",
-  "numero_cpf": "CPF",
-  "data_nascimento": "DD/MM/AAAA",
-  "local_nascimento": "cidade",
-  "estado_natal": "sigla UF",
-  "nome_pai": "nome do pai",
-  "nome_mae": "nome da mãe",
-  "validade": "DD/MM/AAAA",
-  "categoria": "categoria"
-}""",
-
-    "comprovante_residencia": """Analise este comprovante de residência (conta de luz/água/gás/telefone/banco).
-Retorne APENAS JSON válido:
-{
-  "nome_titular": "nome do titular",
-  "endereco_logradouro": "rua/avenida e número apenas",
-  "complemento": "complemento ou null",
-  "bairro": "bairro",
-  "cidade": "cidade",
-  "estado_residencia": "sigla UF",
-  "cep": "CEP"
-}""",
-
-    "curriculo": """Analise este currículo e extraia as informações principais.
-Retorne APENAS JSON válido:
-{
-  "nome_completo": "nome completo",
-  "telefone": "telefone com DDD",
-  "email": "e-mail",
-  "funcao": "cargo/função em maiúsculas",
-  "escolaridade": "ENSINO FUNDAMENTAL, ENSINO MÉDIO ou ENSINO SUPERIOR",
-  "empresa_anterior": "empresa mais recente",
-  "cargo_anterior": "cargo mais recente",
-  "data_admissao_anterior": "DD/MM/AAAA",
-  "data_demissao_anterior": "DD/MM/AAAA ou null",
-  "endereco_empresa": "endereço da empresa anterior",
-  "motivo_saida": "motivo da saída ou null",
-  "tempo_experiencia": "ex: 5 anos, 8 meses"
+  "data_demissao_anterior": "DD/MM/AAAA da demissão ou null se atual",
+  "endereco_empresa": "endereço da empresa mais recente",
+  "motivo_saida": "motivo da saída mais recente ou null",
+  "tempo_experiencia": "tempo total de experiência na área ex: 3 anos e 2 meses"
 }""",
 
     "foto_3x4": """Esta é uma foto 3x4 do candidato.
 Retorne APENAS: {"foto_recebida": true}""",
 
-    "historico_escolar": """Analise este histórico escolar.
-Retorne APENAS JSON válido:
+    "historico_escolar": """Analise este histórico escolar ou boletim escolar brasileiro.
+Retorne APENAS JSON válido (null para campos não visíveis):
 {
-  "nome_aluno": "nome",
-  "nivel_ensino": "ENSINO FUNDAMENTAL, ENSINO MÉDIO ou ENSINO SUPERIOR",
-  "situacao": "CONCLUÍDO, CURSANDO ou INCOMPLETO",
-  "ano_conclusao": "ano ou null",
-  "instituicao": "nome da escola"
+  "nome_aluno": "nome completo do aluno",
+  "nivel_ensino": "apenas: ENSINO FUNDAMENTAL, ENSINO MÉDIO ou ENSINO SUPERIOR",
+  "situacao": "apenas: CONCLUÍDO, CURSANDO ou INCOMPLETO",
+  "ano_conclusao": "ano de conclusão ou null",
+  "instituicao": "nome completo da escola ou universidade",
+  "data_nascimento": "DD/MM/AAAA se constar no documento",
+  "nome_completo": "nome completo se diferente de nome_aluno"
 }""",
 
-    "certificado_conclusao": """Analise este certificado de conclusão.
-Retorne APENAS JSON válido:
+    "certificado_conclusao": """Analise este certificado ou diploma de conclusão de curso brasileiro.
+Retorne APENAS JSON válido (null para campos não visíveis):
 {
-  "nome_formando": "nome completo",
-  "nivel_ensino": "ENSINO FUNDAMENTAL, ENSINO MÉDIO ou ENSINO SUPERIOR",
-  "data_conclusao": "ano ou DD/MM/AAAA",
-  "instituicao": "nome da instituição"
+  "nome_formando": "nome completo do formando",
+  "nivel_ensino": "apenas: ENSINO FUNDAMENTAL, ENSINO MÉDIO ou ENSINO SUPERIOR",
+  "data_conclusao": "ano ou DD/MM/AAAA de conclusão",
+  "instituicao": "nome completo da instituição de ensino",
+  "data_nascimento": "DD/MM/AAAA se constar no documento"
 }""",
 
     "titulo_eleitor": """Analise este Título de Eleitor brasileiro.
-Retorne APENAS JSON válido:
+Pode ser o título físico ou comprovante de alistamento/situação eleitoral impresso.
+Retorne APENAS JSON válido (null para campos não visíveis):
 {
-  "nome_completo": "nome completo",
+  "nome_completo": "nome completo do eleitor",
   "data_nascimento": "DD/MM/AAAA",
-  "numero_titulo": "número do título somente dígitos",
-  "zona_eleitoral": "número da zona somente dígitos",
-  "secao_eleitoral": "número da seção somente dígitos",
-  "municipio": "município",
-  "estado_titulo": "sigla UF"
-}""",
+  "numero_titulo": "número do título — apenas dígitos sem espaços ou pontos",
+  "zona_eleitoral": "número da zona eleitoral — apenas dígitos",
+  "secao_eleitoral": "número da seção eleitoral — apenas dígitos",
+  "municipio": "município de domicílio eleitoral",
+  "estado_titulo": "sigla UF ex: SP",
+  "nome_pai": "nome do pai se visível",
+  "nome_mae": "nome da mãe se visível"
+}
+IMPORTANTE: Número do título tem 12 dígitos. Zona e seção são números separados.""",
 
-    "certificado_reservista": """Analise este Certificado de Reservista (serviço militar brasileiro).
-Retorne APENAS JSON válido:
+    "certificado_reservista": """Analise este Certificado de Reservista do Exército Brasileiro (serviço militar).
+O documento contém: número do certificado, série, categoria (1ª, 2ª ou 3ª CATEGORIA) e dados pessoais.
+Retorne APENAS JSON válido (null para campos não visíveis):
 {
-  "nome_completo": "nome completo",
+  "nome_completo": "nome completo do reservista",
   "data_nascimento": "DD/MM/AAAA",
-  "numero_reservista": "número do certificado",
-  "serie_reservista": "série",
-  "categoria_reservista": "categoria ex: 1ª CATEGORIA"
-}""",
+  "numero_reservista": "número completo do certificado de reservista",
+  "serie_reservista": "série do certificado ex: 002",
+  "categoria_reservista": "categoria ex: 1ª CATEGORIA, 2ª CATEGORIA ou 3ª CATEGORIA",
+  "nome_pai": "nome do pai se visível",
+  "nome_mae": "nome da mãe se visível",
+  "local_nascimento": "cidade de nascimento se visível",
+  "estado_natal": "sigla UF de nascimento se visível"
+}
+IMPORTANTE: Categoria e série são campos distintos — extraia ambos separadamente.""",
 
-    "cartao_vacina_frente": """Analise a frente deste cartão de vacinação.
-Retorne APENAS JSON válido:
+    "cartao_vacina_frente": """Analise a frente deste cartão de vacinação ou caderneta de saúde.
+Retorne APENAS JSON válido (null para campos não visíveis):
 {
-  "nome_paciente": "nome completo",
+  "nome_paciente": "nome completo do paciente",
   "data_nascimento": "DD/MM/AAAA",
+  "nome_mae": "nome da mãe se constar no cartão",
   "cartao_recebido": true
 }""",
 
