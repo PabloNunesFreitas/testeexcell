@@ -644,6 +644,34 @@ def render_manual_section() -> dict:
             if vale != "Não informado":
                 manual["vale_transporte"] = vale
 
+    with st.expander("📋  Autorização para Admissão", expanded=False):
+        col1, col2 = st.columns(2)
+        with col1:
+            lt = st.text_input("Local de Trabalho", key="man_local_trabalho",
+                               placeholder="Ex: MATRIZ PINDAMONHANGABA")
+            if lt:
+                manual["local_trabalho"] = lt
+            da = st.text_input("Data de Admissão", key="man_data_admissao",
+                               placeholder="DD/MM/AAAA")
+            if da:
+                manual["data_admissao"] = da
+        with col2:
+            sal = st.text_input("Salário Inicial (R$)", key="man_salario",
+                                placeholder="Ex: 3649,80")
+            if sal:
+                manual["salario_inicial"] = sal
+        col3, col4 = st.columns(2)
+        with col3:
+            cd = st.selectbox("Contrato Inicial", ["", "30 DIAS", "40 DIAS", "45 DIAS", "60 DIAS", "90 DIAS"],
+                              key="man_contrato_dias")
+            if cd:
+                manual["contrato_dias"] = cd.replace(" DIAS", "")
+        with col4:
+            pd_ = st.selectbox("Prorrogado por mais", ["", "30 DIAS", "40 DIAS", "45 DIAS", "60 DIAS", "90 DIAS"],
+                               key="man_prorrogacao_dias")
+            if pd_:
+                manual["prorrogacao_dias"] = pd_.replace(" DIAS", "")
+
     return manual
 
 
@@ -888,6 +916,25 @@ def render_manual_fill_section(r: dict):
             with c3:
                 conta   = st.text_input("Conta",   value=_v("conta"))
 
+        # ── Autorização para Admissão ─────────────────────
+        DIAS_OPTS = ["", "30", "40", "45", "60", "90"]
+        with st.expander("📋  Autorização para Admissão", expanded=False):
+            c1, c2 = st.columns(2)
+            with c1:
+                local_trab  = st.text_input("Local de Trabalho",  value=_v("local_trabalho"),  placeholder="Ex: MATRIZ PINDAMONHANGABA")
+                data_adm    = st.text_input("Data de Admissão",   value=_v("data_admissao"),   placeholder="DD/MM/AAAA")
+            with c2:
+                salario     = st.text_input("Salário Inicial (R$)", value=_v("salario_inicial"), placeholder="Ex: 3649,80")
+            c3, c4 = st.columns(2)
+            with c3:
+                cd_cur  = _v("contrato_dias")
+                cd_idx  = DIAS_OPTS.index(cd_cur) if cd_cur in DIAS_OPTS else 0
+                cont_d  = st.selectbox("Contrato Inicial (dias)", DIAS_OPTS, index=cd_idx)
+            with c4:
+                pd_cur  = _v("prorrogacao_dias")
+                pd_idx  = DIAS_OPTS.index(pd_cur) if pd_cur in DIAS_OPTS else 0
+                prorr_d = st.selectbox("Prorrogado por mais (dias)", DIAS_OPTS, index=pd_idx)
+
         submitted = st.form_submit_button(
             "🔄   Atualizar Excel com esses dados",
             type="primary", use_container_width=True,
@@ -918,6 +965,9 @@ def render_manual_fill_section(r: dict):
             "data_admissao_anterior": adm_ant, "data_demissao_anterior": dem_ant,
             "motivo_saida": motivo,
             "banco": banco,           "agencia": agencia, "conta": conta,
+            "local_trabalho": local_trab, "data_admissao": data_adm,
+            "salario_inicial": salario,
+            "contrato_dias": cont_d,  "prorrogacao_dias": prorr_d,
             **benef_vals,
         }
         if fibra != "Não informado":

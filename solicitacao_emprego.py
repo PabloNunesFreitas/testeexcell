@@ -368,6 +368,12 @@ CELL_MAP = {
     "benef2_parentesco":  ("E19", lambda v: f"Parentesco: {str(v).upper()}"),
     "benef3_nome":        ("A20", lambda v: f"Nome: {str(v).upper()}"),
     "benef3_parentesco":  ("E20", lambda v: f"Parentesco: {str(v).upper()}"),
+    # Autorização para Admissão
+    "contrato_dias":      ("D41", lambda v: f"{v} DIAS"),
+    "prorrogacao_dias":   ("I41", lambda v: f"{v} DIAS"),
+    "local_trabalho":     ("A42", lambda v: f"Local de Trabalho: {str(v).upper()}"),
+    "data_admissao":      ("A43", lambda v: f"Data de Admissão:  {v}"),
+    "salario_inicial":    ("F43", lambda v: f"Salário inicial: R$ {v}"),
 }
 
 FIELD_PRIORITY = {
