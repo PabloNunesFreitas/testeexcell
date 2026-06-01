@@ -68,8 +68,12 @@ def inject_css():
     [data-testid="stDeployButton"] { display:none !important; }
     header[data-testid="stHeader"] { display:none !important; }
     .stAppDeployButton { display:none !important; }
-    ._link_gzau3_10, [class*="styles_viewerBadge"] { display:none !important; }
+    [class*="viewerBadge"] { display:none !important; }
+    [class*="styles_viewerBadge"] { display:none !important; }
     [data-testid="manage-app-button"] { display:none !important; }
+    [data-testid="stToolbar"] { display:none !important; }
+    div[class*="streamlitApp"] > div:last-child { display:none !important; }
+    a[href*="streamlit.io"] { display:none !important; }
 
     /* SIDEBAR */
     [data-testid="stSidebar"] {
