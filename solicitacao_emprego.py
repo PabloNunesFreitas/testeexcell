@@ -391,8 +391,8 @@ FIELD_PRIORITY = {
     "numero_rg":               ["rg_frente", "cnh"],
     "estado_emissor_rg":       ["rg_frente", "cnh"],
     "data_emissao_rg":         ["rg_frente", "cnh"],
-    "numero_cpf":              ["cpf_frente", "cpf_verso", "cnh", "carteira_trabalho_digital",
-                                "rg_verso", "carteira_trabalho", "comprovante_residencia"],
+    "numero_cpf":              ["cpf_frente", "cpf_verso", "carteira_trabalho", "cnh",
+                                "carteira_trabalho_digital", "rg_verso", "comprovante_residencia"],
     "numero_carteira":         ["carteira_trabalho"],
     "serie_carteira":          ["carteira_trabalho"],
     "estado_emissor_carteira": ["carteira_trabalho"],
@@ -485,8 +485,9 @@ Retorne APENAS JSON válido (null para campos não visíveis):
 }""",
 
     "carteira_trabalho": """Analise esta Carteira de Trabalho e Previdência Social (CTPS) brasileira física.
-Pode ser a página de identificação pessoal, página de qualificações ou página de contratos de trabalho.
-Extraia TODOS os dados visíveis. O PIS/NIT pode aparecer na página de qualificação civil ou no cabeçalho.
+Pode ser a página de identificação pessoal (Qualificação Civil), página de qualificações ou página de contratos.
+Na CTPS física o CPF aparece impresso na página de Qualificação Civil junto com nome, data de nascimento e filiação.
+O PIS/NIT aparece na página de qualificação ou carimbo do empregador. Extraia TODOS os dados visíveis.
 Retorne APENAS JSON válido (null para campos não visíveis):
 {
   "numero_carteira": "número da CTPS",
@@ -497,19 +498,19 @@ Retorne APENAS JSON válido (null para campos não visíveis):
   "data_nascimento": "DD/MM/AAAA",
   "local_nascimento": "cidade de nascimento",
   "estado_natal": "sigla UF de nascimento",
-  "nome_pai": "nome do pai",
-  "nome_mae": "nome da mãe",
+  "nome_pai": "nome do pai (Qualificação Civil)",
+  "nome_mae": "nome da mãe (Qualificação Civil)",
   "nacionalidade": "nacionalidade ex: BRASILEIRO",
   "estado_civil": "estado civil",
   "pis": "número PIS/NIT com pontos e traço ex: 123.45678.12-3",
-  "numero_cpf": "CPF se visível",
+  "numero_cpf": "CPF no formato XXX.XXX.XXX-XX — presente na página de Qualificação Civil",
   "empresa_anterior": "último empregador registrado",
   "cargo_anterior": "última função/cargo registrado",
   "data_admissao_anterior": "DD/MM/AAAA da última admissão",
   "data_demissao_anterior": "DD/MM/AAAA da última demissão ou null",
   "motivo_saida": "motivo da rescisão se visível"
 }
-REGRA: Se for página de contratos, use o contrato mais recente.""",
+REGRAS: CPF tem 11 dígitos — copie exatamente. Se for página de contratos, use o contrato mais recente.""",
 
     "carteira_trabalho_digital": """Analise esta Carteira de Trabalho Digital brasileira.
 Pode ser: tela de identificação do trabalhador, extrato de vínculos, ou CTPSContratosDigitais (listagem de contratos).
