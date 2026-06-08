@@ -378,7 +378,7 @@ CELL_MAP = {
 
 FIELD_PRIORITY = {
     "nome_completo":           ["rg_frente", "cnh", "carteira_trabalho", "cpf_frente",
-                                "carteira_trabalho_digital", "titulo_eleitor", "curriculo"],
+                                "carteira_trabalho_digital", "titulo_eleitor"],
     "data_nascimento":         ["rg_frente", "cnh", "carteira_trabalho", "cpf_frente",
                                 "carteira_trabalho_digital", "titulo_eleitor", "certificado_reservista"],
     "local_nascimento":        ["rg_frente", "cnh", "carteira_trabalho", "certificado_reservista"],
@@ -404,10 +404,10 @@ FIELD_PRIORITY = {
     "numero_reservista":       ["certificado_reservista"],
     "serie_reservista":        ["certificado_reservista"],
     "categoria_reservista":    ["certificado_reservista"],
-    "endereco":                ["comprovante_residencia", "curriculo"],
-    "cep":                     ["comprovante_residencia", "curriculo"],
-    "bairro":                  ["comprovante_residencia", "curriculo"],
-    "estado_residencia":       ["comprovante_residencia", "curriculo"],
+    "endereco":                ["comprovante_residencia"],
+    "cep":                     ["comprovante_residencia"],
+    "bairro":                  ["comprovante_residencia"],
+    "estado_residencia":       ["comprovante_residencia"],
     "telefone":                ["curriculo", "comprovante_residencia"],
     "funcao":                  ["curriculo"],
     "escolaridade":            ["historico_escolar", "certificado_conclusao", "curriculo"],
@@ -417,7 +417,7 @@ FIELD_PRIORITY = {
     "data_demissao_anterior":  ["carteira_trabalho_digital", "carteira_trabalho", "curriculo"],
     "motivo_saida":            ["carteira_trabalho_digital", "carteira_trabalho", "curriculo"],
     "endereco_empresa":        ["curriculo"],
-    "estado_civil":            ["carteira_trabalho", "carteira_trabalho_digital", "curriculo"],
+    "estado_civil":            ["carteira_trabalho", "carteira_trabalho_digital"],
     "nacionalidade":           ["rg_frente", "cnh", "carteira_trabalho", "carteira_trabalho_digital"],
     "tempo_experiencia":       ["curriculo"],
 }
@@ -569,28 +569,22 @@ Retorne APENAS JSON válido (null para campos não visíveis):
 }
 REGRA: O endereço de entrega/cobrança é o endereço de residência — use ele, não o endereço da empresa.""",
 
-    "curriculo": """Analise este currículo profissional e extraia todas as informações disponíveis.
+    "curriculo": """Analise este currículo profissional.
+Extraia APENAS as informações de experiência profissional mais recente, função desejada e escolaridade.
+Não extraia dados pessoais como endereço, CPF, estado civil ou data de nascimento — esses vêm de documentos oficiais.
 Retorne APENAS JSON válido (null para campos não visíveis):
 {
-  "nome_completo": "nome completo",
-  "telefone": "telefone com DDD ex: (11) 99999-9999",
-  "email": "endereço de e-mail",
   "funcao": "cargo ou objetivo profissional em MAIÚSCULAS",
   "escolaridade": "apenas: ENSINO FUNDAMENTAL, ENSINO MÉDIO ou ENSINO SUPERIOR",
-  "data_nascimento": "DD/MM/AAAA se informada",
-  "endereco": "endereço residencial se informado",
-  "bairro": "bairro se informado",
-  "cep": "CEP se informado",
-  "estado_residencia": "sigla UF de residência se informada",
-  "estado_civil": "estado civil se informado",
-  "empresa_anterior": "empresa mais recente ou atual",
-  "cargo_anterior": "cargo mais recente",
-  "data_admissao_anterior": "DD/MM/AAAA da admissão mais recente",
-  "data_demissao_anterior": "DD/MM/AAAA da demissão ou null se atual",
-  "endereco_empresa": "endereço da empresa mais recente",
-  "motivo_saida": "motivo da saída mais recente ou null",
+  "telefone": "telefone com DDD ex: (11) 99999-9999",
+  "empresa_anterior": "nome da última empresa trabalhada",
+  "cargo_anterior": "cargo ocupado na última empresa",
+  "data_admissao_anterior": "DD/MM/AAAA de entrada na última empresa",
+  "data_demissao_anterior": "DD/MM/AAAA de saída da última empresa ou null se ainda empregado",
+  "motivo_saida": "motivo da saída da última empresa ou null",
   "tempo_experiencia": "tempo total de experiência na área ex: 3 anos e 2 meses"
-}""",
+}
+REGRA: Use sempre a experiência mais recente (última empresa). Não invente datas — null se não informado.""",
 
     "foto_3x4": """Esta é uma foto 3x4 do candidato.
 Retorne APENAS: {"foto_recebida": true}""",
