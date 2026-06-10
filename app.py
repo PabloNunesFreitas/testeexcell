@@ -66,7 +66,15 @@ def inject_css():
     .main .block-container { padding: 1.5rem 2rem 3rem; max-width: 1200px; }
     #MainMenu, footer { visibility: hidden; }
     [data-testid="stDeployButton"] { display:none !important; }
-    header[data-testid="stHeader"] { display:none !important; }
+    header[data-testid="stHeader"] { background: transparent !important; height: 0 !important; }
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"],
+    [data-testid="stExpandSidebarButton"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        z-index: 999999 !important;
+    }
     .stAppDeployButton { display:none !important; }
     [class*="viewerBadge"] { display:none !important; }
     [class*="styles_viewerBadge"] { display:none !important; }
