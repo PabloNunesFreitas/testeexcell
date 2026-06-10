@@ -97,7 +97,11 @@ def inject_css():
     [class*="viewerBadge"] { display:none !important; }
     [class*="styles_viewerBadge"] { display:none !important; }
     [data-testid="manage-app-button"] { display:none !important; }
-    [data-testid="stToolbar"] { display:none !important; }
+    /* NÃO esconder a toolbar inteira: o botão de reabrir a sidebar vive
+       dentro dela. Escondemos só os itens da direita (Deploy, menu, status). */
+    [data-testid="stToolbarActions"] { display:none !important; }
+    [data-testid="stMainMenu"] { display:none !important; }
+    [data-testid="stStatusWidget"] { display:none !important; }
     div[class*="streamlitApp"] > div:last-child { display:none !important; }
     a[href*="streamlit.io"] { display:none !important; }
 
