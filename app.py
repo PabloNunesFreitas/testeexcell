@@ -74,9 +74,24 @@ def inject_css():
         visibility: visible !important;
         opacity: 1 !important;
         position: fixed !important;
-        top: 0.5rem !important;
-        left: 0.5rem !important;
+        top: 0.6rem !important;
+        left: 0.6rem !important;
         z-index: 999999 !important;
+        background: linear-gradient(135deg,#1d6fde,#4ca3ff) !important;
+        border-radius: 10px !important;
+        padding: 6px !important;
+        box-shadow: 0 4px 14px rgba(0,0,0,.25) !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    /* garante a seta/ícone branco e visível sobre o botão azul */
+    [data-testid="stSidebarCollapsedControl"] *,
+    [data-testid="collapsedControl"] *,
+    [data-testid="stExpandSidebarButton"] * {
+        color: #ffffff !important;
+        fill: #ffffff !important;
+        opacity: 1 !important;
+        visibility: visible !important;
     }
     .stAppDeployButton { display:none !important; }
     [class*="viewerBadge"] { display:none !important; }
