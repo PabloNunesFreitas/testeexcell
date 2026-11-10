@@ -722,7 +722,11 @@ def extract_document_info(key_manager: GeminiKeyManager, doc_type: str, file_pat
                 return {}
 
         try:
-            client = genai.Client(api_key=api_key)
+            # google-genai 3.x usa a API v1 por padrão; o alias "-latest" só existe na v1beta
+            client = genai.Client(
+                api_key=api_key,
+                http_options=gtypes.HttpOptions(api_version="v1beta"),
+            )
 
             suffix = Path(file_path).suffix.lower()
             mime_type = MIME_TYPES.get(suffix, "image/jpeg")
